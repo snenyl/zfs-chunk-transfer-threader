@@ -54,6 +54,11 @@ brew install rclone # macOS
    while :; do ps -f | grep rclone | wc -l; sleep 1; done
    ```
 
+4. **Completed transfer, verify with the gerated MD5 file**:
+   ```shell
+   rclone check --one-way  -C md5 files.md5 telia_privat:plugins -vv
+   ```
+
 ## Configuration
 
 The script's parameters can be adjusted in `main.py`:
