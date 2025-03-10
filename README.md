@@ -107,6 +107,12 @@ zfs send --raw Argon/Private@manual-2025-03-10_18-33 | mbuffer -r 12.5M | pv | s
 ```
 By implementing `mbuffer` with a rate limit, you can control the data flow, reducing the risk of generating chunks faster than they can be uploaded.
 
+
+### Ramdisk for storing the split files
+```shell
+ mount -t tmpfs  -o size=10G tmpfs /mnt/Argon/upload_to_telia/ramdisk
+```
+
 ## License
 
 This project is licensed under the MIT License.
