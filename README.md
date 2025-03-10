@@ -89,6 +89,23 @@ The script's parameters can be adjusted in `main.py`:
 - The script is optimized for FreeBSD, where `watch` is not natively installed.
 - Uses `rclone check` to validate transfers, ensuring data integrity.
 - If `rclone` reports a transfer failure, the local file is not deleted.
+- 
+
+## Other Useful Cases
+Cloud providers like Telia Sky (Jottacloud) offer "unlimited" storage space. However, as you store more data, upload speeds may decrease. To manage the generation of chunks and prevent overwhelming the upload process, you can use `mbuffer` with a rate limit (e.g., 100 Mbit/s).
+Here's an example command:
+```bash
+zfs send --raw Argon/Private@manual-2025-03-10_18-33 | mbuffer -r 12.5M | split -b 64M - dataset-snap.img.
+```
+**Explanation:**
+- `zfs send --raw Argon/Private@manual-2025-03-10_18-33`: Sends the ZFS snapshot.
+- `mbuffer -r 12.5M`: Limits the data transfer rate to 12.5 megabytes per second (equivalent to 100 megabits per second).
+- `split -b 64M - dataset-snap.img.`: Splits the data into 64-megabyte chunks prefixed with `dataset-snap.img.`.
+**Note:** The `pv` command, which monitors data transfer progress, is optional and can be included if you wish to observe real-time throughput. If desired, insert it between `mbuffer` and `split`:
+```bash
+zfs send --raw Argon/Private@manual-2025-03-10_18-33 | mbuffer -r 12.5M | pv | split -b 64M - dataset-snap.img.
+```
+By implementing `mbuffer` with a rate limit, you can control the data flow, reducing the risk of generating chunks faster than they can be uploaded.
 
 ## License
 
