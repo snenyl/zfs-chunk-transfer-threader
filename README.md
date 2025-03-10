@@ -41,7 +41,7 @@ brew install rclone # macOS
 2. **Send a ZFS snapshot and split into chunks**:
 
    ```shell
-   zfs send --raw Argon/Private@manual-2025-03-10_18-33 | split -b 64M - dataset-snap.img.
+   zfs send --raw Argon/Private@manual-2025-03-10_18-33 | split -b 64M  -a 10 - dataset-snap.img.
    ```
 
    You can adjust the desired chunk size based on how fast the dataset is converted and your internet speed. A chunk size of `128M` works well for `1Gbit` links.
