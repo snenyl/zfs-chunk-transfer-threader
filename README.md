@@ -1,6 +1,12 @@
 # ZFSChunkTransferThreader
 
-ZFSChunkTransfer is a multi-threaded file transfer utility designed to monitor a directory (`chunks/`), detect new files, ensure file stability, compute MD5 checksums, and transfer them to a remote location using `rclone`. The tool also verifies the integrity of the transferred files before deleting the local copies.
+ZFSChunkTransfer is a multi-threaded file transfer utility that monitors a directory (chunks/), detects new files, verifies their stability, computes MD5 checksums, and transfers them to a remote destination using rclone. It ensures data integrity by verifying each transfer before deleting local copies.
+
+This tool is especially useful when your ZFS pool is reaching 80% capacity and you need to backup datasets to the cloud, rebuild a new pool, and then restore them using zfs receive.
+
+⚠️ **Note:** Use at your own risk—I take no responsibility for missing chunks.
+
+
 
 ## Features
 
