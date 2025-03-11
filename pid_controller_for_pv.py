@@ -1,11 +1,11 @@
-# PI controller gains (tune these as needed)
-Kp = 0.035
-Ki = 0.001
+# PID controller gains (tune these as needed)
+Kp = 0.1
+Ki = 0.000
+Kd = 0.1  # Derivative gain
 
 # Sampling time in seconds
-dt = 0.5
+dt = 0.1
 
-# Helper functions to parse human-readable sizes and format speeds
 def parse_size(s):
     """
     Convert a human-readable size string (e.g. "5.0GiB", "55M", "1K") to bytes.
@@ -54,10 +54,7 @@ def get_directory_size(path):
     """
     try:
         # Capture the human-readable size (first field of du output)
-        output = subprocess.check_output(["du", "-sh", path], universal_newlines=True)
-        size_str = output.split()[0]
-        return parse_size(size_str)
-    except Exception as e:
+        o
         print(f"Error getting directory size: {e}")
         return None
 
@@ -73,7 +70,8 @@ def set_transfer_speed(speed_str):
         print(f"Error setting transfer speed: {e}")
 
 def main():
-    integral = 0.0  # integral term initialization
+    integral = 0.0   # Integral term initialization
+    previous_error = 0.0  # To store the last error for derivative calculation
     path = "/mnt/Argon/upload_to_telia/ramdisk/chunks/"
 
     while True:
@@ -88,9 +86,11 @@ def main():
         # Update the integral term
         integral += error * dt
 
-        # PI controller output: u = Kp * error + Ki * integral
-        # This output is interpreted as the desired transfer speed in bytes/s.
-        u = Kp * error + Ki * integral
+        # Calculate the derivative term
+        derivative = (error - previous_error) / dt
+
+        # PID controller output: u = Kp * error + Ki * integral + Kd * derivative
+        u = Kp * error + Ki * integral + Kd * derivative
 
         # Clamp the controller output between MIN_SPEED and MAX_SPEED
         u = max(MIN_SPEED, min(u, MAX_SPEED))
@@ -101,10 +101,13 @@ def main():
         # Set the new transfer speed
         set_transfer_speed(speed_str)
 
+        # Store current error for next derivative calculation
+        previous_error = error
+
         time.sleep(dt)
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("PI controller stopped.")
+        print("PID controller stopped.")
