@@ -1,6 +1,12 @@
 # ZFSChunkTransferThreader
 
-ZFSChunkTransfer is a multi-threaded file transfer utility designed to monitor a directory (`chunks/`), detect new files, ensure file stability, compute MD5 checksums, and transfer them to a remote location using `rclone`. The tool also verifies the integrity of the transferred files before deleting the local copies.
+ZFSChunkTransfer is a multi-threaded file transfer utility that monitors a directory (chunks/), detects new files, verifies their stability, computes MD5 checksums, and transfers them to a remote destination using rclone. It ensures data integrity by verifying each transfer before deleting local copies.
+
+This tool is especially useful when your ZFS pool is reaching 80% capacity and you need to backup datasets to the cloud, rebuild a new pool, and then restore them using zfs receive.
+
+⚠️ **Note:** Use at your own risk—I take no responsibility for missing chunks.
+
+
 
 ## Features
 
@@ -35,7 +41,7 @@ brew install rclone # macOS
 2. **Send a ZFS snapshot and split into chunks**:
 
    ```shell
-   zfs send --raw Argon/Private@manual-2025-03-10_18-33 | split -b 64M - dataset-snap.img.
+   zfs send --raw Argon/Private@manual-2025-03-10_18-33 | split -b 64M  -a 10 - dataset-snap.img.
    ```
 
    You can adjust the desired chunk size based on how fast the dataset is converted and your internet speed. A chunk size of `128M` works well for `1Gbit` links.
@@ -52,6 +58,11 @@ brew install rclone # macOS
 
    ```shell
    while :; do ps -f | grep rclone | wc -l; sleep 1; done
+   ```
+
+4. **Completed transfer, verify with the gerated MD5 file**:
+   ```shell
+   rclone check --one-way  -C md5 files.md5 telia_privat:plugins -vv
    ```
 
 ## Configuration
@@ -78,6 +89,29 @@ The script's parameters can be adjusted in `main.py`:
 - The script is optimized for FreeBSD, where `watch` is not natively installed.
 - Uses `rclone check` to validate transfers, ensuring data integrity.
 - If `rclone` reports a transfer failure, the local file is not deleted.
+- 
+
+## Other Useful Cases
+Cloud providers like Telia Sky (Jottacloud) offer "unlimited" storage space. However, as you store more data, upload speeds may decrease. To manage the generation of chunks and prevent overwhelming the upload process, you can use `mbuffer` with a rate limit (e.g., 100 Mbit/s).
+Here's an example command:
+```bash
+zfs send --raw Argon/Private@manual-2025-03-10_18-33 | mbuffer -r 12.5M | split -b 64M - dataset-snap.img.
+```
+**Explanation:**
+- `zfs send --raw Argon/Private@manual-2025-03-10_18-33`: Sends the ZFS snapshot.
+- `mbuffer -r 12.5M`: Limits the data transfer rate to 12.5 megabytes per second (equivalent to 100 megabits per second).
+- `split -b 64M - dataset-snap.img.`: Splits the data into 64-megabyte chunks prefixed with `dataset-snap.img.`.
+**Note:** The `pv` command, which monitors data transfer progress, is optional and can be included if you wish to observe real-time throughput. If desired, insert it between `mbuffer` and `split`:
+```bash
+zfs send --raw Argon/Private@manual-2025-03-10_18-33 | mbuffer -r 12.5M | pv | split -b 64M - dataset-snap.img.
+```
+By implementing `mbuffer` with a rate limit, you can control the data flow, reducing the risk of generating chunks faster than they can be uploaded.
+
+
+### Ramdisk for storing the split files
+```shell
+ mount -t tmpfs  -o size=10G tmpfs /mnt/Argon/upload_to_telia/ramdisk
+```
 
 ## License
 
